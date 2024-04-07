@@ -3,6 +3,7 @@ use crate::control::ledmatrix::PwmFreqArg;
 use crate::games::game_of_life::GameOfLifeState;
 use crate::games::pong::PongState;
 use crate::games::snake::SnakeState;
+use embedded_graphics::prelude::*;
 
 pub const WIDTH: usize = 9;
 pub const HEIGHT: usize = 34;
@@ -21,6 +22,30 @@ impl Grid {
         for x in 0..WIDTH {
             self.0[x].rotate_right(rotations);
         }
+    }
+}
+impl DrawTarget for Grid {
+    type Color = embedded_graphics::pixelcolor::Gray8;
+    type Error = ();
+    fn draw_iter<I>(&mut self, pixels: I) -> Result<(), Self::Error>
+    where
+        I: IntoIterator<Item = Pixel<Self::Color>>,
+    {
+        for Pixel(Point { x, y }, brightness) in pixels.into_iter() {
+            let Some(row) = self.0.get_mut(y as usize) else {
+                continue;
+            };
+            let Some(pixel) = row.get_mut(x as usize) else {
+                continue;
+            };
+            *pixel = brightness.luma();
+        }
+        Ok(())
+    }
+}
+impl OriginDimensions for Grid {
+    fn size(&self) -> Size {
+        Size::new(WIDTH as u32, HEIGHT as u32)
     }
 }
 
