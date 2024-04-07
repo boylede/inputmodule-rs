@@ -59,7 +59,7 @@ pub struct LedmatrixState {
     /// LED brightness out of 255
     pub brightness: u8,
     /// Current sleep state
-    pub sleeping: SleepState,
+    pub sleep_state: SleepState,
     /// State of the current game, if any
     pub game: Option<GameState>,
     pub animation_period: u64,
@@ -81,6 +81,15 @@ pub struct LedmatrixState {
 pub enum SleepState {
     Awake,
     Sleeping((Grid, u8)),
+}
+
+impl SleepState {
+    pub fn is_awake(&self) -> bool {
+        match self {
+            SleepState::Awake => true,
+            SleepState::Sleeping(_) => false,
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
