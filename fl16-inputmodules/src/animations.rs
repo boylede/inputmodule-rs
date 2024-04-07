@@ -132,6 +132,12 @@ impl Iterator for GameOfLifeIterator {
 pub struct BreathingIterator {
     frames_remaining: usize,
     current_brightness: u8,
+    direction: Direction,
+}
+
+enum Direction {
+    Up,
+    Down,
 }
 
 impl BreathingIterator {
@@ -139,12 +145,13 @@ impl BreathingIterator {
         Self {
             frames_remaining: frames,
             current_brightness: 0,
+            direction: Direction::Up,
         }
     }
 }
 impl Default for BreathingIterator {
     fn default() -> Self {
-        Self::new(64)
+        Self::new(128)
     }
 }
 
@@ -155,8 +162,23 @@ impl Iterator for BreathingIterator {
         if self.frames_remaining > 0 {
             let mut grid = Grid::default();
             let breath_step = 4;
-            // TODO: Make it cycle up and down
-            self.current_brightness = (self.current_brightness + breath_step) % 255;
+            self.current_brightness = match self.direction {
+                Direction::Up => {
+                    let next_brighness = self.current_brightness.saturating_add(breath_step);
+                    if next_brighness == u8::MAX {
+                        self.direction = Direction::Down;
+                    }
+                    next_brighness
+                }
+                Direction::Down => {
+                    let next_brighness = self.current_brightness.saturating_sub(breath_step);
+                    if next_brighness == 0 {
+                        self.direction = Direction::Up;
+                    }
+                    next_brighness
+                }
+            };
+
             for y in 0..HEIGHT {
                 for x in 0..WIDTH {
                     grid.0[x][y] = self.current_brightness;
