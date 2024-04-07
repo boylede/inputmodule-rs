@@ -9,7 +9,6 @@ members = [
     "c1minimal",
     "ledmatrix",
     "fl16-inputmodules",
-    "inputmodule-control",
     "qtpy",
 ]
 # Don't build all of them by default.
