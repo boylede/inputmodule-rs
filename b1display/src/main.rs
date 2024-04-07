@@ -9,6 +9,11 @@ use cortex_m::delay::Delay;
 use defmt_rtt as _;
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 
+use fl16_inputmodules::control::b1display::handle_command_b1display;
+use fl16_inputmodules::control::b1display::B1DIsplayState;
+use fl16_inputmodules::control::b1display::B1DisplayTag;
+use fl16_inputmodules::control::b1display::ScreenSaverState;
+use fl16_inputmodules::control::b1display::SimpleSleepState;
 use rp2040_hal::gpio::{Output, Pin, PushPull};
 //#[cfg(debug_assertions)]
 //use panic_probe as _;
@@ -305,21 +310,21 @@ fn main() -> ! {
                     // Do nothing
                 }
                 Ok(count) => {
-                    match (parse_command(count, &buf), &state.sleeping) {
+                    match (parse_command::<B1DisplayTag>(count, &buf), &state.sleeping) {
                         (Some(Command::Sleep(go_sleeping)), _) => {
                             handle_sleep(go_sleeping, &mut state, &mut delay, &mut disp);
                         }
                         (Some(c @ Command::BootloaderReset), _)
                         | (Some(c @ Command::IsSleeping), _) => {
-                            if let Some(response) =
-                                handle_command(&c, &mut state, logo_rect, &mut disp, &mut delay)
-                            {
+                            if let Some(response) = handle_command_b1display(
+                                &c, &mut state, logo_rect, &mut disp, &mut delay,
+                            ) {
                                 let _ = serial.write(&response);
                             };
                         }
                         (Some(command), SimpleSleepState::Awake) => {
                             // While sleeping no command is handled, except waking up
-                            if let Some(response) = handle_command(
+                            if let Some(response) = handle_command_b1display(
                                 &command, &mut state, logo_rect, &mut disp, &mut delay,
                             ) {
                                 let _ = serial.write(&response);

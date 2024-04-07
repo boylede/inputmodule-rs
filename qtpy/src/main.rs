@@ -52,7 +52,10 @@ pub type Ws2812<'a> = ws2812_pio::Ws2812<
     Gpio12,
 >;
 
-use fl16_inputmodules::control::*;
+use fl16_inputmodules::control::{
+    c1minimal::{handle_command_c1minimal, C1MinimalState, C1MinimalTag, SimpleSleepState},
+    *,
+};
 use fl16_inputmodules::serialnum::device_release;
 
 const FRAMEWORK_VID: u16 = 0x32AC;
@@ -151,13 +154,13 @@ fn main() -> ! {
                     // Do nothing
                 }
                 Ok(count) => {
-                    if let Some(command) = parse_command(count, &buf) {
+                    if let Some(command) = parse_command::<C1MinimalTag>(count, &buf) {
                         if let Command::Sleep(go_sleeping) = command {
                             handle_sleep(go_sleeping, &mut state, &mut delay, &mut ws2812);
                         } else if let SimpleSleepState::Awake = state.sleeping {
                             // While sleeping no command is handled, except waking up
                             if let Some(response) =
-                                handle_command(&command, &mut state, &mut ws2812)
+                                handle_command_c1minimal(&command, &mut state, &mut ws2812)
                             {
                                 let _ = serial.write(&response);
                             };

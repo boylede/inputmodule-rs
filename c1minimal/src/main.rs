@@ -21,7 +21,12 @@ use rp2040_panic_usb_boot as _;
 
 // Provide an alias for our BSP so we can switch targets quickly.
 // Uncomment the BSP you included in Cargo.toml, the rest of the code does not need to change.
-use fl16_inputmodules::minimal_hal as bsp;
+use fl16_inputmodules::{
+    control::c1minimal::{
+        handle_command_c1minimal, C1MinimalState, C1MinimalTag, SimpleSleepState,
+    },
+    minimal_hal as bsp,
+};
 //use rp_pico as bsp;
 
 use bsp::hal::{
@@ -166,13 +171,13 @@ fn main() -> ! {
                     // Do nothing
                 }
                 Ok(count) => {
-                    if let Some(command) = parse_command(count, &buf) {
+                    if let Some(command) = parse_command::<C1MinimalTag>(count, &buf) {
                         if let Command::Sleep(go_sleeping) = command {
                             handle_sleep(go_sleeping, &mut state, &mut delay, &mut ws2812);
                         } else if let SimpleSleepState::Awake = state.sleeping {
                             // While sleeping no command is handled, except waking up
                             if let Some(response) =
-                                handle_command(&command, &mut state, &mut ws2812)
+                                handle_command_c1minimal(&command, &mut state, &mut ws2812)
                             {
                                 let _ = serial.write(&response);
                             };

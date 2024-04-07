@@ -1,5 +1,5 @@
 use crate::animations::*;
-use crate::control::PwmFreqArg;
+use crate::control::ledmatrix::PwmFreqArg;
 use crate::games::game_of_life::GameOfLifeState;
 use crate::games::pong::PongState;
 use crate::games::snake::SnakeState;
