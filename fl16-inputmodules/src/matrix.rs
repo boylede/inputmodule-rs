@@ -29,8 +29,8 @@ pub struct LedmatrixState {
     pub grid: Grid,
     /// Temporary buffer for building a new grid
     pub col_buffer: Grid,
-    /// Whether the grid is currently being animated
-    pub animate: bool,
+    /// Automatically advance pixels along the x axis each frame
+    pub auto_scroll: bool,
     /// LED brightness out of 255
     pub brightness: u8,
     /// Current sleep state

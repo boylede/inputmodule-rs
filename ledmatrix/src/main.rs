@@ -233,7 +233,7 @@ fn main() -> ! {
     let mut state = LedmatrixState {
         grid: percentage(0),
         col_buffer: Grid::default(),
-        animate: false,
+        auto_scroll: false,
         brightness: 51, // Default to 51/255 = 20% brightness
         sleeping: SleepState::Awake,
         game: None,
@@ -396,7 +396,7 @@ fn main() -> ! {
             }
 
             fill_grid_pixels(&state, &mut matrix);
-            if state.animate {
+            if state.auto_scroll {
                 for x in 0..WIDTH {
                     state.grid.0[x].rotate_right(1);
                 }

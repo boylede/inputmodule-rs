@@ -551,12 +551,12 @@ pub fn handle_command(
             None
         }
         Command::SetAnimate(a) => {
-            state.animate = *a;
+            state.auto_scroll = *a;
             None
         }
         Command::GetAnimate => {
             let mut response: [u8; 32] = [0; 32];
-            response[0] = state.animate as u8;
+            response[0] = state.auto_scroll as u8;
             Some(response)
         }
         Command::Draw(vals) => {
