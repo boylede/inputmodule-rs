@@ -247,8 +247,14 @@ pub fn display_letter(pos: usize, grid: &mut Grid, letter: SingleDisplayData) {
     let letter_size = 8;
     for x in 0..letter_size {
         for y in 0..letter_size {
-            let val = if letter[x] & (1 << y) > 0 { 0xFF } else { 0 };
-            grid.0[letter_size - x][y + pos] = val;
+            // use get_mut rather than array indexing[] to tolerate invalid indexes.
+            let Some(row) = grid.0.get_mut(letter_size - x) else {
+                continue;
+            };
+            let Some(pixel) = row.get_mut(y + pos) else {
+                continue;
+            };
+            *pixel = if letter[x] & (1 << y) > 0 { 0xFF } else { 0 };
         }
     }
 }
