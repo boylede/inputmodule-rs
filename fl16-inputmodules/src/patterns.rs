@@ -244,11 +244,11 @@ pub fn display_lotus2() -> Grid {
 }
 
 pub fn display_letter(pos: usize, grid: &mut Grid, letter: SingleDisplayData) {
-    let letter_size = 8;
-    for x in 0..letter_size {
-        for y in 0..letter_size {
+    const LETTER_SIZE: usize = 8;
+    for x in 0..LETTER_SIZE {
+        for y in 0..LETTER_SIZE {
             // use get_mut rather than array indexing[] to tolerate invalid indexes.
-            let Some(row) = grid.0.get_mut(letter_size - x) else {
+            let Some(row) = grid.0.get_mut(LETTER_SIZE - x) else {
                 continue;
             };
             let Some(pixel) = row.get_mut(y + pos) else {
