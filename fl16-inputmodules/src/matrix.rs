@@ -32,6 +32,8 @@ impl DrawTarget for Grid {
         I: IntoIterator<Item = Pixel<Self::Color>>,
     {
         for Pixel(Point { x, y }, brightness) in pixels.into_iter() {
+            let x = -x + HEIGHT as i32;
+            let y = -y as i32;
             let Some(row) = self.0.get_mut(y as usize) else {
                 continue;
             };
