@@ -44,7 +44,7 @@ ws2812-pio = { workspace = true, optional = true }
 
 [features]
 default = []
-ledmatrix = ["is31fl3741"]
+ledmatrix = ["is31fl3741", "embedded-graphics"]
 b1display = ["st7306", "embedded-graphics", "tinybmp"]
 c1minimal = ["smart-leds", "ws2812-pio"]
 qtpy = ["c1minimal"]

@@ -23,6 +23,9 @@ impl Grid {
             self.0[x].rotate_right(rotations);
         }
     }
+    pub fn reset(&mut self) {
+        *self = Default::default()
+    }
 }
 impl DrawTarget for Grid {
     type Color = embedded_graphics::pixelcolor::Gray8;
@@ -32,8 +35,8 @@ impl DrawTarget for Grid {
         I: IntoIterator<Item = Pixel<Self::Color>>,
     {
         for Pixel(Point { x, y }, brightness) in pixels.into_iter() {
-            let x = -x + HEIGHT as i32;
-            let y = -y as i32;
+            let x = x as i32;
+            let y = y + WIDTH as i32 - 1;
             let Some(row) = self.0.get_mut(y as usize) else {
                 continue;
             };

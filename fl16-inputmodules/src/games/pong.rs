@@ -9,6 +9,31 @@ struct Score {
     _lower: u8,
 }
 
+enum Side {
+    Top,
+    Bottom,
+}
+
+struct Paddle {
+    pos: u8,
+    side: Side,
+}
+
+impl Paddle {
+    fn draw(&self, grid: &mut Grid) {
+        let y = match self.side {
+            Side::Top => 0,
+            Side::Bottom => HEIGHT - 1,
+        };
+        let x = self.pos as usize;
+        for x in x..x + PADDLE_WIDTH {
+            if let Some(pixel) = grid.0.get_mut(x).and_then(|row| row.get_mut(y)) {
+                *pixel = 0xff
+            };
+        }
+    }
+}
+
 type Position = (usize, usize);
 type Velocity = (i8, i8);
 
@@ -17,6 +42,14 @@ struct Ball {
     pos: Position,
     // Not a position, more like a directional vector
     direction: Velocity,
+}
+
+impl Ball {
+    /// returns the pixel index where the ball is predicted
+    /// to reach the top/bottom of the board
+    fn predict_intersection(&self) -> usize {
+        todo!()
+    }
 }
 
 #[derive(Clone)]
@@ -50,12 +83,23 @@ impl PongState {
         let mut grid = Grid::default();
 
         for x in self.paddles.0..self.paddles.0 + PADDLE_WIDTH {
-            grid.0[x][0] = 0xFF;
+            if let Some(pixel) = grid.0.get_mut(x).and_then(|row| row.get_mut(0)) {
+                *pixel = 0xff
+            };
         }
         for x in self.paddles.1..self.paddles.1 + PADDLE_WIDTH {
-            grid.0[x][HEIGHT - 1] = 0xFF;
+            if let Some(pixel) = grid.0.get_mut(x).and_then(|row| row.get_mut(HEIGHT - 1)) {
+                *pixel = 0xff
+            };
         }
-        grid.0[self.ball.pos.0][self.ball.pos.1] = 0xFF;
+
+        if let Some(pixel) = grid
+            .0
+            .get_mut(self.ball.pos.0)
+            .and_then(|row| row.get_mut(self.ball.pos.1))
+        {
+            *pixel = 0xff
+        };
 
         grid
     }

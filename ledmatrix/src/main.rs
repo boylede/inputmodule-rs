@@ -6,8 +6,11 @@
 use cortex_m::delay::Delay;
 //use defmt::*;
 use defmt_rtt as _;
-use embedded_hal::digital::v2::{InputPin, OutputPin};
-
+use embedded_graphics::{prelude::*, text::Text};
+use embedded_hal::{
+    digital::v2::{InputPin, OutputPin},
+    watchdog::Watchdog as _,
+};
 use rp2040_hal::{
     gpio::bank0::Gpio29,
     rosc::{Enabled, RingOscillator},
@@ -31,91 +34,25 @@ enum SleepMode {
 /// slowly fade themm on/off
 const SLEEP_MODE: SleepMode = SleepMode::Fading;
 
-const STARTUP_ANIMATION: bool = true;
-
-/// Go to sleep after 60s awake
-const SLEEP_TIMEOUT: u64 = 60_000_000;
+/// Go to sleep after 5min awake
+const SLEEP_TIMEOUT: u64 = 300_000_000;
 
 /// List maximum current as 500mA in the USB descriptor
 const MAX_CURRENT: usize = 500;
 
 /// Maximum brightness out of 255
-/// On HW Rev 1 from BizLink set to 94 to have just below 500mA current draw.
-///
-/// BizLink HW Rev 2 has a larger current limiting resistor.
-/// 100/255 results in 250mA current draw which is plenty bright.
 ///  50/255 results in 160mA current draw which is plenty bright.
-#[cfg(feature = "10k")]
-const MAX_BRIGHTNESS: u8 = 94;
-#[cfg(not(feature = "10k"))]
 const MAX_BRIGHTNESS: u8 = 50;
-
-// TODO: Doesn't work yet, unless I panic right at the beginning of main
-//#[cfg(not(debug_assertions))]
-//use core::panic::PanicInfo;
-//#[cfg(not(debug_assertions))]
-//#[panic_handler]
-//fn panic(_info: &PanicInfo) -> ! {
-//    let mut pac = pac::Peripherals::take().unwrap();
-//    let core = pac::CorePeripherals::take().unwrap();
-//    let mut watchdog = Watchdog::new(pac.WATCHDOG);
-//    let sio = Sio::new(pac.SIO);
-//
-//    let clocks = init_clocks_and_plls(
-//        bsp::XOSC_CRYSTAL_FREQ,
-//        pac.XOSC,
-//        pac.CLOCKS,
-//        pac.PLL_SYS,
-//        pac.PLL_USB,
-//        &mut pac.RESETS,
-//        &mut watchdog,
-//    )
-//    .ok()
-//    .unwrap();
-//
-//    let mut delay = cortex_m::delay::Delay::new(core.SYST, clocks.system_clock.freq().to_Hz());
-//
-//    let pins = bsp::Pins::new(
-//        pac.IO_BANK0,
-//        pac.PADS_BANK0,
-//        sio.gpio_bank0,
-//        &mut pac.RESETS,
-//    );
-//
-//    let mut led_enable = pins.sdb.into_push_pull_output();
-//    led_enable.set_high().unwrap();
-//
-//    let i2c = bsp::hal::I2C::i2c1(
-//        pac.I2C1,
-//        pins.gpio26.into_mode::<bsp::hal::gpio::FunctionI2C>(),
-//        pins.gpio27.into_mode::<bsp::hal::gpio::FunctionI2C>(),
-//        1000.kHz(),
-//        &mut pac.RESETS,
-//        &clocks.peripheral_clock,
-//    );
-//
-//    let mut matrix = LedMatrix::configure(i2c);
-//    matrix
-//        .setup(&mut delay)
-//        .expect("failed to setup rgb controller");
-//
-//    set_brightness(state, 255, &mut matrix);
-//    let grid = display_panic();
-//    fill_grid_pixels(state, &mut matrix);
-//
-//    loop {}
-//}
 
 // Provide an alias for our BSP so we can switch targets quickly.
 // Uncomment the BSP you included in Cargo.toml, the rest of the code does not need to change.
 use bsp::entry;
-use fl16_inputmodules::animations::*;
-#[cfg(not(feature = "evt"))]
+
 use fl16_inputmodules::fl16::DVT2_CALC_PIXEL;
-#[cfg(feature = "evt")]
-use fl16_inputmodules::fl16::EVT_CALC_PIXEL;
-use fl16_inputmodules::games::pong_animation::*;
-use fl16_inputmodules::games::snake_animation::*;
+
+use fl16_inputmodules::{animations::*, control::ledmatrix::LedMatrixTag};
+use fl16_inputmodules::{control::ledmatrix::handle_command_ledmatrix, games::snake_animation::*};
+use fl16_inputmodules::{control::ledmatrix::PwmFreqArg, games::pong_animation::*};
 use fl16_inputmodules::{games::game_of_life, led_hal as bsp};
 //use rp_pico as bsp;
 // use sparkfun_pro_micro_rp2040 as bsp;
@@ -235,7 +172,7 @@ fn main() -> ! {
         col_buffer: Grid::default(),
         auto_scroll: false,
         brightness: 51, // Default to 51/255 = 20% brightness
-        sleeping: SleepState::Awake,
+        sleep_state: SleepState::Awake,
         game: None,
         animation_period: 31_250, // 31,250 us = 32 FPS
         pwm_freq: PwmFreqArg::P29k,
@@ -243,42 +180,28 @@ fn main() -> ! {
         upcoming_frames: None,
     };
     state.debug_mode = dip1.is_low().unwrap();
-    if show_startup_animation(&state) {
-        state.upcoming_frames = Some(match get_random_byte(&rosc) % 8 {
-            0 => Animation::Percentage(StartupPercentageIterator::default()),
-            1 => Animation::ZigZag(ZigZagIterator::default()),
-            2 => Animation::Gof(GameOfLifeIterator::new(GameOfLifeStartParam::Pattern1, 200)),
-            3 => Animation::Gof(GameOfLifeIterator::new(
-                GameOfLifeStartParam::BeaconToadBlinker,
-                128,
-            )),
-            4 => Animation::Gof(GameOfLifeIterator::new(GameOfLifeStartParam::Glider, 128)),
-            5 => Animation::Breathing(BreathingIterator::default()),
-            6 => Animation::Pong(PongIterator::default()),
-            7 => Animation::Snake(SnakeIterator::default()),
-            _ => unreachable!(),
-        });
-    } else {
-        // If no startup animation, keep display always on
-        state.grid = percentage(100);
-    };
 
-    #[cfg(feature = "evt")]
-    let mut matrix = LedMatrix::new(i2c, EVT_CALC_PIXEL);
-    #[cfg(not(feature = "evt"))]
+    // state.upcoming_frames = Some(match get_random_byte(&rosc) % 8 {
+    //     0 => Animation::Percentage(StartupPercentageIterator::default()),
+    //     1 => Animation::ZigZag(ZigZagIterator::default()),
+    //     2 => Animation::Gof(GameOfLifeIterator::new(GameOfLifeStartParam::Pattern1, 200)),
+    //     3 => Animation::Gof(GameOfLifeIterator::new(
+    //         GameOfLifeStartParam::BeaconToadBlinker,
+    //         128,
+    //     )),
+    //     4 => Animation::Gof(GameOfLifeIterator::new(GameOfLifeStartParam::Glider, 128)),
+    //     5 => Animation::Breathing(BreathingIterator::default()),
+    //     6 => Animation::Pong(PongIterator::default()),
+    //     7 => Animation::Snake(SnakeIterator::default()),
+    //     _ => unreachable!(),
+    // });
+    state.upcoming_frames = Some(Animation::Pong(PongIterator::default()));
+
     let mut matrix = LedMatrix::new(i2c, DVT2_CALC_PIXEL);
     matrix
         .setup(&mut delay)
         .expect("failed to setup RGB controller");
 
-    // EVT
-    #[cfg(feature = "evt")]
-    matrix
-        .device
-        .sw_enablement(is31fl3741::SwSetting::Sw1Sw9)
-        .unwrap();
-    // DVT
-    #[cfg(not(feature = "evt"))]
     matrix
         .device
         .sw_enablement(is31fl3741::SwSetting::Sw1Sw8)
@@ -385,13 +308,18 @@ fn main() -> ! {
 
         // Handle period display updates. Don't do it too often
         let render_again = timer.get_counter().ticks() > animation_timer + state.animation_period;
-        if matches!(state.sleeping, SleepState::Awake) && render_again {
+        if state.sleep_state.is_awake() && render_again {
             if let Some(ref mut upcoming) = state.upcoming_frames {
                 if let Some(next_frame) = upcoming.next() {
                     state.grid = next_frame;
                 } else {
                     // Animation is over. Clear screen
                     state.grid = Grid::default();
+                    let text = "READY!";
+
+                    Text::new(text, Point::new(0, -1), CHARACTER_STYLE)
+                        .draw(&mut state.grid)
+                        .ok();
                 }
             }
 
@@ -460,9 +388,9 @@ fn main() -> ! {
                             }
                             // Make sure sleep animation only goes up to newly set brightness,
                             // if setting the brightness causes wakeup
-                            if let SleepState::Sleeping((ref grid, _)) = state.sleeping {
+                            if let SleepState::Sleeping((ref grid, _)) = state.sleep_state {
                                 if let Command::SetBrightness(new_brightness) = command {
-                                    state.sleeping =
+                                    state.sleep_state =
                                         SleepState::Sleeping((grid.clone(), new_brightness));
                                 }
                             }
@@ -560,6 +488,7 @@ fn main() -> ! {
             }
             game_timer = timer.get_counter().ticks();
         }
+        watchdog.feed();
     }
 }
 
@@ -571,7 +500,7 @@ fn get_random_byte(rosc: &RingOscillator<Enabled>) -> u8 {
     byte
 }
 
-fn dyn_sleep_mode(state: &LedmatrixState) -> SleepMode {
+const fn dyn_sleep_mode(state: &LedmatrixState) -> SleepMode {
     if state.debug_mode {
         SleepMode::Debug
     } else {
@@ -581,11 +510,6 @@ fn dyn_sleep_mode(state: &LedmatrixState) -> SleepMode {
 
 fn debug_mode(state: &LedmatrixState) -> bool {
     dyn_sleep_mode(state) == SleepMode::Debug
-}
-
-fn show_startup_animation(state: &LedmatrixState) -> bool {
-    // Show startup animation
-    STARTUP_ANIMATION && !debug_mode(state)
 }
 
 fn assign_sleep_reason(
@@ -613,11 +537,11 @@ fn handle_sleep(
     delay: &mut Delay,
     led_enable: &mut gpio::Pin<Gpio29, gpio::Output<gpio::PushPull>>,
 ) {
-    match (state.sleeping.clone(), sleep_reason) {
+    match (&mut state.sleep_state, sleep_reason) {
         // Awake and staying awake
         (SleepState::Awake, None) => (),
         (SleepState::Awake, Some(sleep_reason)) => {
-            state.sleeping = SleepState::Sleeping((state.grid.clone(), state.brightness));
+            state.sleep_state = SleepState::Sleeping((state.grid.clone(), state.brightness));
             // Slowly decrease brightness
             if dyn_sleep_mode(state) == SleepMode::Fading {
                 let mut brightness = state.brightness;
@@ -651,10 +575,18 @@ fn handle_sleep(
             }
         }
         // Sleeping and need to wake up
-        (SleepState::Sleeping((old_grid, old_brightness)), None) => {
+        (sleep_state @ SleepState::Sleeping(_), None) => {
+            // this duplicate match helps the borrow checker
+            // and allows us to avoid an extra allocation
+            // the branch should be removed by the complier
+            let (grid, old_brightness) = match sleep_state {
+                SleepState::Sleeping((g, b)) => (core::mem::take(g), *b),
+                _ => unreachable!(),
+            };
+            *sleep_state = SleepState::Awake;
+
             // Restore back grid before sleeping
-            state.sleeping = SleepState::Awake;
-            state.grid = old_grid;
+            state.grid = grid;
             fill_grid_pixels(state, matrix);
 
             // Power LED controller back on
