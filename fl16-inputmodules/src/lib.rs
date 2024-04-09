@@ -2,16 +2,13 @@
 #![no_std]
 
 #[cfg(feature = "ledmatrix")]
+pub mod animations;
+#[cfg(feature = "ledmatrix")]
 pub mod fl16;
 #[cfg(feature = "ledmatrix")]
 pub mod games;
 #[cfg(feature = "ledmatrix")]
 pub mod led_hal;
-#[cfg(feature = "ledmatrix")]
-#[rustfmt::skip]
-pub mod mapping;
-#[cfg(feature = "ledmatrix")]
-pub mod animations;
 #[cfg(feature = "ledmatrix")]
 pub mod matrix;
 #[cfg(feature = "ledmatrix")]

@@ -1,3 +1,10 @@
+use embedded_graphics::{
+    geometry::Point,
+    mono_font::{ascii::FONT_6X9, MonoTextStyle, MonoTextStyleBuilder},
+    pixelcolor::Gray8,
+    text::Text,
+    Drawable,
+};
 use rp2040_hal::{
     gpio::bank0::{Gpio26, Gpio27},
     pac::I2C1,
@@ -5,7 +12,6 @@ use rp2040_hal::{
 
 use crate::fl16::LedMatrix;
 use crate::led_hal as bsp;
-use crate::mapping::*;
 use crate::matrix::*;
 
 /// Bytes needed to represent all LEDs with a single bit
@@ -14,6 +20,15 @@ pub const DRAW_BYTES: usize = 39;
 
 /// Maximum number of brightneses levels
 pub const BRIGHTNESS_LEVELS: u8 = 255;
+
+pub const CHARACTER_STYLE: MonoTextStyle<'static, Gray8> = {
+    // todo: MonoTextStyleBuilder.font is not const otherwise this would be a one-liner
+    let mut cs = MonoTextStyleBuilder::new()
+        .text_color(Gray8::new(51))
+        .build();
+    cs.font = &FONT_6X9;
+    cs
+};
 
 pub type Foo = LedMatrix<
     bsp::hal::I2C<
@@ -53,31 +68,15 @@ pub fn draw_grey_col(grid: &mut Grid, col: u8, levels: &[u8; HEIGHT]) {
 pub fn display_sleep_reason(sleep_reason: SleepReason) -> Grid {
     let mut grid = Grid::default();
 
-    match sleep_reason {
-        SleepReason::Command => {
-            display_letter(20, &mut grid, CAP_C);
-            display_letter(10, &mut grid, CAP_M);
-            display_letter(0, &mut grid, CAP_D);
-        }
-        SleepReason::SleepPin => {
-            display_letter(23, &mut grid, CAP_S);
-            display_letter(13, &mut grid, CAP_L);
-            display_letter(7, &mut grid, CAP_P);
-            display_letter(0, &mut grid, HASH);
-        }
-        SleepReason::Timeout => {
-            display_letter(24, &mut grid, CAP_T);
-            display_letter(16, &mut grid, CAP_I);
-            display_letter(8, &mut grid, CAP_M);
-            display_letter(0, &mut grid, CAP_E);
-        }
-        SleepReason::UsbSuspend => {
-            display_letter(17, &mut grid, CAP_U);
-            display_letter(10, &mut grid, CAP_S);
-            display_letter(0, &mut grid, CAP_B);
-        }
+    let text = match sleep_reason {
+        SleepReason::Command => "CMD",
+        SleepReason::SleepPin => "SLP#",
+        SleepReason::Timeout => "TIME",
+        SleepReason::UsbSuspend => "USB",
     };
-
+    Text::new(text, Point::new(0, 6), CHARACTER_STYLE)
+        .draw(&mut grid)
+        .ok();
     grid
 }
 
@@ -183,13 +182,10 @@ pub fn display_panic() -> Grid {
 
 pub fn display_lotus() -> Grid {
     let mut grid = Grid::default();
-
-    display_letter(26, &mut grid, CAP_L);
-    display_letter(20, &mut grid, CAP_O);
-    display_letter(12, &mut grid, CAP_T);
-    display_letter(0, &mut grid, CAP_S);
-    display_letter(5, &mut grid, CAP_U);
-
+    let text = "LOTUS";
+    Text::new(text, Point::new(0, 6), CHARACTER_STYLE)
+        .draw(&mut grid)
+        .ok();
     grid
 }
 
@@ -243,20 +239,10 @@ pub fn display_lotus2() -> Grid {
     ])
 }
 
-pub fn display_letter(pos: usize, grid: &mut Grid, letter: SingleDisplayData) {
-    const LETTER_SIZE: usize = 8;
-    for x in 0..LETTER_SIZE {
-        for y in 0..LETTER_SIZE {
-            // use get_mut rather than array indexing[] to tolerate invalid indexes.
-            let Some(row) = grid.0.get_mut(LETTER_SIZE - x) else {
-                continue;
-            };
-            let Some(pixel) = row.get_mut(y + pos) else {
-                continue;
-            };
-            *pixel = if letter[x] & (1 << y) > 0 { 0xFF } else { 0 };
-        }
-    }
+pub fn display_string(grid: &mut Grid, text: &str) {
+    Text::new(text, Point::new(0, 6), CHARACTER_STYLE)
+        .draw(grid)
+        .ok();
 }
 
 /// Gradient getting brighter from top to bottom
