@@ -1,6 +1,6 @@
 # Not stable yet :(
 # Trackign issue: https://github.com/rust-lang/cargo/issues/9406
-# cargo-features = ["per-package-target"]
+cargo-features = ["per-package-target"]
 
 [workspace]
 resolver = "2"
