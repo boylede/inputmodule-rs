@@ -305,24 +305,24 @@ fn main() -> ! {
                     // Do nothing
                 }
                 Ok(count) => {
-                    match (parse_command(count, &buf), &state.sleeping) {
+                    match (parse_command_b1display(count, &buf), &state.sleeping) {
                         (Some(Command::Sleep(go_sleeping)), _) => {
                             handle_sleep(go_sleeping, &mut state, &mut delay, &mut disp);
                         }
                         (Some(c @ Command::BootloaderReset), _)
                         | (Some(c @ Command::IsSleeping), _) => {
-                            if let Some(response) =
-                                handle_command(&c, &mut state, logo_rect, &mut disp, &mut delay)
+                            if let Some(ref response) =
+                                handle_command_b1display(&c, &mut state, logo_rect, &mut disp, &mut delay)
                             {
-                                let _ = serial.write(&response);
+                                let _ = serial.write(response);
                             };
                         }
                         (Some(command), SimpleSleepState::Awake) => {
                             // While sleeping no command is handled, except waking up
-                            if let Some(response) = handle_command(
+                            if let Some(ref response) = handle_command_b1display(
                                 &command, &mut state, logo_rect, &mut disp, &mut delay,
                             ) {
-                                let _ = serial.write(&response);
+                                let _ = serial.write(response);
                             };
                             // Must write AFTER writing response, otherwise the
                             // client interprets this debug message as the response

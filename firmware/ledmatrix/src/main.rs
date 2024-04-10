@@ -434,11 +434,11 @@ fn main() -> ! {
                 }
                 Ok(count) => {
                     let random = get_random_byte(&rosc);
-                    match (parse_command(count, &buf), &state.sleeping) {
+                    match (parse_command_ledmatrix(count, &buf), &state.sleeping) {
                         // Handle bootloader command without any delay
                         // No need, it'll reset the device anyways
                         (Some(c @ Command::BootloaderReset), _) => {
-                            handle_command(&c, &mut state, &mut matrix, random);
+                            handle_command_ledmatrix(&c, &mut state, &mut matrix, random);
                         }
                         (Some(command), _) => {
                             if let Command::Sleep(go_sleeping) = command {
@@ -479,7 +479,7 @@ fn main() -> ! {
                             sleep_timer = timer.get_counter().ticks();
 
                             if let Some(response) =
-                                handle_command(&command, &mut state, &mut matrix, random)
+                                handle_command_ledmatrix(&command, &mut state, &mut matrix, random)
                             {
                                 let _ = serial.write(&response);
                             };

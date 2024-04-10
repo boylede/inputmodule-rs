@@ -151,13 +151,13 @@ fn main() -> ! {
                     // Do nothing
                 }
                 Ok(count) => {
-                    if let Some(command) = parse_command(count, &buf) {
+                    if let Some(command) = parse_command_qtpy(count, &buf) {
                         if let Command::Sleep(go_sleeping) = command {
                             handle_sleep(go_sleeping, &mut state, &mut delay, &mut ws2812);
                         } else if let SimpleSleepState::Awake = state.sleeping {
                             // While sleeping no command is handled, except waking up
                             if let Some(response) =
-                                handle_command(&command, &mut state, &mut ws2812)
+                                handle_command_qtpy(&command, &mut state, &mut ws2812)
                             {
                                 let _ = serial.write(&response);
                             };

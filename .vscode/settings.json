@@ -3,6 +3,7 @@
     "rust-analyzer.checkOnSave.allTargets": false,
     // "rust-analyzer.check.allTargets": false,
     "rust-analyzer.cargo.allTargets": false,
+    "rust-analyzer.showUnlinkedFileNotification": false,
     // "rust-analyzer.cargo.buildScripts.enable": true,
     // "rust-analyzer.cargo.noDefaultFeatures": true,
     // "rust-analyzer.check.workspace": false,
@@ -12,4 +13,5 @@
     // "rust-analyzer.server.extraEnv": {
     //     "RA_LOG": "info"
     // }
+    
 }
