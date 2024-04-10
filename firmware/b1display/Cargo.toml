@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name = "c1minimal"
+name = "b1display"
 version = "0.2.0"
 
 [dependencies]
@@ -25,10 +25,10 @@ usbd-serial.workspace = true
 usbd-hid.workspace = true
 fugit.workspace = true
 
-# C1 Minimal
-smart-leds.workspace = true
-ws2812-pio.workspace = true
+st7306.workspace = true
+embedded-graphics.workspace = true
+tinybmp.workspace = true
 
 [dependencies.fl16-inputmodules]
-path = "../fl16-inputmodules"
-features = [ "c1minimal" ]
+path = "../../fl16-inputmodules"
+features = [ "b1display" ]

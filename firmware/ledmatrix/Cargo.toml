@@ -1,7 +1,11 @@
 [package]
 edition = "2021"
-name = "qtpy"
+name = "ledmatrix"
 version = "0.2.0"
+
+[features]
+10k = []
+evt = []
 
 [dependencies]
 cortex-m.workspace = true
@@ -25,14 +29,8 @@ usbd-serial.workspace = true
 usbd-hid.workspace = true
 fugit.workspace = true
 
-# C1 Minimal
-smart-leds.workspace = true
-ws2812-pio.workspace = true
-
-# QT Py
-adafruit-qt-py-rp2040 = "0.6.0"
+is31fl3741.workspace = true
 
 [dependencies.fl16-inputmodules]
-path = "../fl16-inputmodules"
-# Same feature as c1minimal
-features = [ "c1minimal", "qtpy" ]
+path = "../../fl16-inputmodules"
+features = ["ledmatrix"]

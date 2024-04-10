@@ -1,5 +1,15 @@
 {
-    "rust-analyzer.cargo.target": "thumbv6m-none-eabi",
+    // "rust-analyzer.cargo.target": "thumbv6m-none-eabi",
     "rust-analyzer.checkOnSave.allTargets": false,
-    "editor.formatOnSave": true
+    // "rust-analyzer.check.allTargets": false,
+    "rust-analyzer.cargo.allTargets": false,
+    // "rust-analyzer.cargo.buildScripts.enable": true,
+    // "rust-analyzer.cargo.noDefaultFeatures": true,
+    // "rust-analyzer.check.workspace": false,
+    // "rust-analyzer.imports.preferNoStd": true,
+    // "editor.formatOnSave": true,
+    // "rust-analyzer.trace.server": "verbose",
+    // "rust-analyzer.server.extraEnv": {
+    //     "RA_LOG": "info"
+    // }
 }

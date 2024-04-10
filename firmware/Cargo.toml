@@ -1,9 +1,12 @@
 [workspace]
 resolver = "2"
 members = [
-    "fl16-inputmodules",
-    "inputmodule-control",
+    "b1display",
+    "c1minimal",
+    "ledmatrix",
+    "qtpy", 
 ]
+
 
 [workspace.dependencies]
 cortex-m = "0.7"

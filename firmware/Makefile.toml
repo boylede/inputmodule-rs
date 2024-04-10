@@ -1,6 +1,5 @@
 [env]
 TARGET_TRIPLE = "thumbv6m-none-eabi"
-CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 FEATURES = ""
 
 [tasks.build]
